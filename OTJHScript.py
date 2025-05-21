@@ -9,7 +9,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from dotenv import load_dotenv
-import chromedriver_autoinstaller
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -24,8 +23,8 @@ LEARNER_URL = "https://web.bud.co.uk/learningportal/learner"
 
 # === BROWSER SETUP ===
 def start_browser():
-    # Automatically install and use matching chromedriver version
-    chromedriver_autoinstaller.install()
+    
+    os.environ["PATH"] += os.pathsep + os.path.abspath("chromedriver/chromedriver-mac-arm64")
 
     options = Options()
     options.add_argument("--headless")
