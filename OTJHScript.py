@@ -1,5 +1,4 @@
 import os
-import openai
 import time
 import re
 import requests
@@ -11,12 +10,13 @@ from selenium.webdriver.chrome.options import Options
 from dotenv import load_dotenv
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import cohere
 
 # === LOAD .env VARIABLES ===
 load_dotenv()
 USERNAME = os.getenv("BUD_USERNAME")
 PASSWORD = os.getenv("BUD_PASSWORD")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
 LOGIN_URL = "https://web.bud.co.uk/learningportal/learner/login"
 LEARNER_URL = "https://web.bud.co.uk/learningportal/learner"
@@ -105,25 +105,21 @@ def get_log_details():
 
 # === AI COMMENT GENERATION ===
 def generate_comment(module_title, log_date, context_prompt):
-    from openai import OpenAI
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+    co = cohere.Client(cohere_api_key)
 
-    user_prompt = f"Write a short, professional summary about what you did (max 255 characters) for the module '{module_title}' on {log_date.strftime('%d %B %Y')} as you are an apprentice."
+    user_prompt = f"As an apprentice, write a casual, short comment (max 255 characters) about what you did in the module '{module_title}'. Avoid long intros. Just say what was done that day."
     if context_prompt:
-        user_prompt += f" Focus on: {context_prompt}"
-
-    messages = [
-        {"role": "system", "content": "You are the apprentice summarising their off-the-job learning logs in max 255 characters professionally."},
-        {"role": "user", "content": user_prompt}
-    ]
+        user_prompt += f"As an apprentice, write a casual, short comment (max 255 characters) about what you did in the module '{module_title}' based on {context_prompt}. Avoid long intros. Just say what was done that day."
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo-0125",
-            messages=messages,
-            temperature=0.5
+        response = co.generate(
+            model='command',
+            prompt=user_prompt,
+            max_tokens=100,
+            temperature=0.5,
         )
-        return response.choices[0].message.content.strip()
+        return response.generations[0].text.strip()
     except Exception as e:
         print(f"⚠️ AI failed, using fallback. Error: {e}")
         return f"Worked on {module_title} on {log_date.strftime('%d %B %Y')}."
